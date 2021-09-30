@@ -14,12 +14,14 @@ contract SimpleBank {
     
     // Fill in the visibility keyword. 
     // Hint: We want to protect our users balance from other contracts
-    mapping (address => uint) private balances ;
+    mapping (address => uint) internal balances ;
     
     // Fill in the visibility keyword
     // Hint: We want to create a getter function and allow contracts to be able
     //       to see if a user is enrolled.
     mapping (address => bool) public enrolled;
+
+   
 
     // Let's make sure everyone knows who owns the bank, yes, fill in the
     // appropriate visilibility keyword
@@ -29,14 +31,14 @@ contract SimpleBank {
      */
     
     // Add an argument for this event, an accountAddress
-    event LogEnrolled(address _accountAddress);
+    event LogEnrolled(address accountAddress);
 
     // Add 2 arguments for this event, an accountAddress and an amount
-    event LogDepositMade(address _accountAddress, uint _amount);
+    event LogDepositMade(address accountAddress, uint amount);
 
     // Create an event called LogWithdrawal
     // Hint: it should take 3 arguments: an accountAddress, withdrawAmount and a newBalance 
-    event LogWithdrawal(address _accountAddress, uint _amount, uint _newBalance);
+    event LogWithdrawal(address accountAddress, uint amount, uint newBalance);
 
     /* Functions
      */
@@ -49,6 +51,12 @@ contract SimpleBank {
     function () external payable {
         revert();
     }
+
+    // function safeAdd(uint a, uint b) pure returns (uint) {
+    //   uint c = a + b;
+    //   assert(c >= a);
+    //   return c;
+    // }
 
     /// @notice Get balance
     /// @return The balance of the user
@@ -71,35 +79,37 @@ contract SimpleBank {
 
     /// @notice Deposit ether into bank
     /// @return The balance of the user after the deposit is made
-    function deposit(address _accountAddress, uint _value, uint _newBalance) public payable returns (uint) {
+    function deposit() public payable returns (uint) {
       // 1. Add the appropriate keyword so that this function can receive ether
-    
       // 2. Users should be enrolled before they can make deposits
-      require (enrolled[_accountAddress] = true);
+      require(enrolled[msg.sender] = true);
       // 3. Add the amount to the user's balance. Hint: the amount can be
       //    accessed from of the global variable `msg`
-      balances[msg.sender] += _value = _newBalance;
+      balances[msg.sender] += msg.value;
       // 4. Emit the appropriate event associated with this function
-      emit LogDepositMade(_accountAddress, _value);
+      emit LogDepositMade(msg.sender, msg.value);
       // 5. return the balance of sndr of this transaction
-      return _newBalance;
+      return balances[msg.sender];
     }
 
     /// @notice Withdraw ether from bank
     /// @dev This does not return any excess ether sent to it
     /// @param withdrawAmount amount you want to withdraw
     /// @return The balance remaining for the user
-    function withdraw(uint withdrawAmount) public returns (uint) {
+    function withdraw(uint withdrawAmount) public returns (uint newBalance) {
       // If the sender's balance is at least the amount they want to withdraw,
       // Subtract the amount from the sender's balance, and try to send that amount of ether
       // to the user attempting to withdraw. 
       // return the user's balance.
-
       // 1. Use a require expression to guard/ensure sender has enough funds
-
+      require (balances[msg.sender] >= withdrawAmount, "Not enough funds");
       // 2. Transfer Eth to the sender and decrement the withdrawal amount from
       //    sender's balance
-
+      balances[msg.sender] -= withdrawAmount;
+      msg.sender.transfer(withdrawAmount);
       // 3. Emit the appropriate event for this message
+      // newBalance = balances[msg.sender];
+      emit LogWithdrawal(msg.sender, withdrawAmount, (balances[msg.sender]));
+      return balances[msg.sender];
     }
 }
